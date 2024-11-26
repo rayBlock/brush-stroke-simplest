@@ -10,27 +10,28 @@ import {AbsoluteFill, random} from 'remotion';
 export type Props = {
 	width: number;
 	height: number;
+	id: string;
 };
 
-const paths = [brushStroke1];
+// const paths = [brushStroke1];
 
 const BrushStrokePresentation: React.FC<
 	TransitionPresentationComponentProps<Props>
-> = ({children, presentationDirection, presentationProgress, passedProps}) => {
+> = ({children, presentationDirection, presentationProgress, passedProps,}) => {
 	const [clipId] = useState(() => String(random(null)));
-	const translatedPaths = paths.map((path) => {
-		const boundingBox = getBoundingBox(path);
-		const translatedPath = translatePath(
-			path,
-			passedProps.width / 2 - boundingBox.width / 2,
-			passedProps.height / 2 - boundingBox.height / 2,
-		);
-		const id = useMemo(() => String(random(null)), []);
-		return {
-			path: translatedPath,
-			id,
-		};
-	});
+	// const translatedPaths = paths.map((path) => {
+	// 	const boundingBox = getBoundingBox(path);
+	// 	const translatedPath = translatePath(
+	// 		path,
+	// 		passedProps.width / 2 - boundingBox.width / 2,
+	// 		passedProps.height / 2 - boundingBox.height / 2,
+	// 	);
+
+	// 	return {
+	// 		path: translatedPath,
+	// 		id: passedProps.id,
+	// 	};
+	// });
 
 	const progressInDirection =
 		presentationDirection === 'entering'
@@ -51,9 +52,7 @@ const BrushStrokePresentation: React.FC<
 			maskImage: '',
 			clipPath: `url(#${clipId})`,
 		};
-	}, [clipId, presentationDirection]);
-
-	// const w = interpolate(presentationProgress, [0, 1], [0, 100]);
+	}, [clipId]);
 
 	const path =
 		presentationDirection === 'entering' ? translatedPath : translatedPath;

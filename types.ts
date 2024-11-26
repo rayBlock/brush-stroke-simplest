@@ -1,22 +1,30 @@
+import {zColor} from '@remotion/zod-types';
 import {PropsWithChildren} from 'react';
 import {z} from 'zod';
 
-export const TreansitionType = z.enum(['A', 'B', 'C']);
-export const SequenceType = z.object({
-	url: z.string(),
-	type: TreansitionType,
-	offset: z.number(),
-});
+export const TypeTr = z.enum(['A', 'B', 'C']);
 
-export const InputImagesType = z.array(SequenceType);
 export const schema = z.object({
-	images: InputImagesType,
+	logoSources: z.object({
+		fullLogo: z.string(),
+		fullLogoWhite: z.string(),
+		icon: z.string(),
+		iconWhite: z.string(),
+	}),
+	logoSize: z.number().step(0.1),
+	logoSizeEnd: z.number().step(0.1),
+	logoDelay: z.number().step(0.1),
+	fontSize: z.number(),
+	backgroundColor: zColor(),
+	images: z.array(
+		z.object({
+			url: z.string(),
+			type: TypeTr,
+			offset: z.number(),
+		}),
+	),
 });
 
-export type TransitionType = z.infer<typeof TreansitionType>;
-
-export type SequenceType = z.infer<typeof SequenceType>;
 export type SequenceComponentProps = PropsWithChildren & {
-	type: TransitionType;
+	type: z.infer<typeof TypeTr>;
 };
-export type InputImagesType = z.infer<typeof InputImagesType>;

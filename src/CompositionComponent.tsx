@@ -1,18 +1,30 @@
-import {AbsoluteFill, Img} from 'remotion';
-import {z} from 'zod';
-import {DURATION_IN_FRAMES} from './constants';
-import {cn} from './lib/utils';
-import {Series} from 'remotion';
-import {OutroSequenceComponent} from './components/sequences/OutroSequenceComponent';
-import {SequenceComponent} from './components/sequences/SequenceComponent';
-import {schema} from '../types';
+import { AbsoluteFill, Img, useVideoConfig } from 'remotion';
+import { Series } from 'remotion';
+import { OutroSequenceComponent } from './components/sequences/OutroSequenceComponent';
+import { SequenceComponent } from './components/sequences/SequenceComponent';
+import { schema } from '../types';
+import { z } from 'zod';
 
-export const SeriesComponent: React.FC<z.infer<typeof schema>> = ({images}) => {
-	const sceneDurationInFrames = Math.floor(DURATION_IN_FRAMES / images.length);
+export const BrushComposition: React.FC<z.infer<typeof schema>> = ({ images, backgroundColor,
+	 // fontSize, 
+	 logoSize, logoSizeEnd, logoDelay, 
+	logoSources
+}) => {
+
+	const { durationInFrames } = useVideoConfig();
+
+	const sceneDurationInFrames = Math.floor(durationInFrames / images.length);
+
 	return (
-		<AbsoluteFill className="bg-[#000000] items-center justify-center">
+		<AbsoluteFill style={{
+			background: backgroundColor,
+			alignItems: 'center',
+			justifyContent: 'center',
+		}} >
 			<Series>
-				{images.map(({url, type, offset}, index) => (
+				{images.map(({ url, type, offset }, index) => (
+
+
 					<Series.Sequence
 						key={url}
 						offset={offset}
@@ -21,12 +33,16 @@ export const SeriesComponent: React.FC<z.infer<typeof schema>> = ({images}) => {
 						<SequenceComponent key={url} type={type}>
 							<Img
 								src={url}
-								className={cn(
-									`w-full h-full object-cover absolute top-0 left-0 filter`,
-									index % 2 === 0
-										? 'hue-rotate-[170deg] saturate-50 contrast-200'
-										: 'saturate-0',
-								)}
+								style={{
+									width: '100%',
+									height: '100%',
+									objectFit: 'cover',
+									position: 'absolute',
+									filter: index % 2 === 0 ? `
+								      hue-rotate(170deg) saturate(50%) contrast(200%)	`  
+									: `saturate(0)`,
+								}}
+					
 							/>
 						</SequenceComponent>
 					</Series.Sequence>
@@ -34,9 +50,12 @@ export const SeriesComponent: React.FC<z.infer<typeof schema>> = ({images}) => {
 
 				<Series.Sequence
 					durationInFrames={sceneDurationInFrames * 2}
-					offset={-30}
+					offset={-5}
 				>
-					<OutroSequenceComponent />
+					<OutroSequenceComponent logo={logoSources.fullLogoWhite}
+					logoDelay={logoDelay}
+					logoSize={logoSize}
+					logoSizeEnd={logoSizeEnd} />
 				</Series.Sequence>
 			</Series>
 		</AbsoluteFill>
