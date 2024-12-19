@@ -6,49 +6,54 @@ import {
 	useVideoConfig,
 } from 'remotion';
 import {useMemo} from 'react';
-import {translatePath} from '@remotion/paths';
+import {getBoundingBox, translatePath} from '@remotion/paths';
 import {brushStroke1} from '../../../paths';
 
 export const TransitionA = ({clipId}: {clipId: string}) => {
 	const {width, height, durationInFrames} = useVideoConfig();
+	const boundingBox = getBoundingBox(brushStroke1);
 	const frame = useCurrentFrame();
-	const progress = interpolate(frame, [0, durationInFrames / 2], [0, 1], {
+
+	const progress = interpolate(frame, [0, durationInFrames * 0.5], [0, 1], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',
+		easing: Easing.bezier(0.4, 0, 0.2, 1),
 	});
-	const path = translatePath(brushStroke1, 0, 0);
-	const clipPath = translatePath(brushStroke1, 0, 0);
-	const maskId1 = useMemo(() => String(random(null)), []);
-	const maskId2 = useMemo(() => String(random(null)), []);
-	const maskId3 = useMemo(() => String(random(null)), []);
-	const maskId4 = useMemo(() => String(random(null)), []);
 
-	const clipPathId = useMemo(() => String(random(null)), []);
+	const path = translatePath(
+		brushStroke1,
+		width / 2 - boundingBox.width / 2,
+		height / 2 - boundingBox.height / 2,
+	);
+	const maskId1 = useMemo(() => String(random(null)), []);
 	const pathId = useMemo(() => String(random(null)), []);
 
-	const p1 = interpolate(1 - progress, [0.1, 1], [0, 1], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-		easing: Easing.in(Easing.cubic),
-	});
-
-	const p2 = interpolate(progress, [0.1, 0.6], [-1, 0], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-		easing: Easing.in(Easing.cubic),
-	});
-
-	const p3 = interpolate(1 - progress, [0.3, 0.8], [0, 1], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-		easing: Easing.in(Easing.cubic),
-	});
-
-	const p4 = interpolate(progress, [0.5, 0.9], [-1, 0], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-		easing: Easing.in(Easing.cubic),
-	});
+	// Create a double spiral effect
+	const totalRotations = 3; // Reduced from 4 to 3 for faster completion
+	const pointsPerRotation = 20; // Reduced from 28 to 20 for faster progression
+	const totalPoints = totalRotations * pointsPerRotation;
+	
+	const spiralPoints = useMemo(() => {
+		return Array.from({length: totalPoints}, (_, i) => {
+			const angle = (i * 2 * Math.PI) / pointsPerRotation;
+			const rotation = i / totalPoints;
+			// Create two interleaved spirals
+			const radius = interpolate(
+				rotation,
+				[0, 1],
+				[120, 30], // Larger radius range for more coverage
+				{
+					extrapolateLeft: 'clamp',
+					extrapolateRight: 'clamp',
+				}
+			);
+			return {
+				angle: angle + rotation * 2 * Math.PI * totalRotations,
+				radius,
+				index: i,
+			};
+		});
+	}, []);
 
 	return (
 		<svg
@@ -58,53 +63,46 @@ export const TransitionA = ({clipId}: {clipId: string}) => {
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<defs>
-				{/* Masking path */}
 				<clipPath id={maskId1}>
-					<use href={`#${pathId}`} transform={`translate(${p1 * width}, 0) `} />
-				</clipPath>
-				<clipPath id={maskId2}>
-					<use href={`#${pathId}`} transform={`translate(${p2 * width}, 0)`} />
-				</clipPath>
-				<clipPath id={maskId3}>
-					<use
-						href={`#${pathId}`}
-						transform={`translate(${p3 * width}, 0) scale(1 , 1)`}
-					/>
-				</clipPath>
-				<clipPath id={maskId4}>
-					<use
-						href={`#${clipPathId}`}
-						transform={`translate(${p4 * width}, 0) scale(1 , 1)`}
+					<use 
+						href={`#${pathId}`} 
+						transform={`translate(${(1 - progress) * width * 0.3}, 0)`}
 					/>
 				</clipPath>
 
-				{/* Clipping path from shapes */}
 				<clipPath id={clipId}>
-					<use
-						href={`#${pathId}`}
-						transform={`translate(-300, 150) rotate(35, ${width / 2}, ${height / 2}) scale(1.9, 1.2)  `}
-						clipPath={`url(#${maskId1})`}
-					/>
+					{spiralPoints.map(({angle, radius, index}) => {
+						const progressThreshold = index / totalPoints;
+						const elementProgress = interpolate(
+							progress,
+							[progressThreshold - 0.08, progressThreshold], // Changed from 0.15 to 0.08 for faster fade-in
+							[0, 1],
+							{
+								extrapolateLeft: 'clamp',
+								extrapolateRight: 'clamp',
+							}
+						);
 
-					<use
-						href={`#${pathId}`}
-						transform={`translate(0, 300) rotate(-5, ${width / 2}, ${(height * 1.8) / 2}) scale(1.1, 1.2) `}
-						clipPath={`url(#${maskId2})`}
-					/>
-					<use
-						href={`#${pathId}`}
-						transform={`translate(${-width / 3},0) rotate(-60, ${(width * 1.4) / 2}, ${(height * 1.2) / 2}) scale(1.5, 1.2) `}
-						clipPath={`url(#${maskId3})`}
-					/>
+						if (elementProgress === 0) return null;
 
-					<use
-						href={`#${pathId}`}
-						transform={`translate(${width / 3},0) rotate(-60, ${(width * 1.4) / 2}, ${(height * 1.2) / 2}) scale(1.5, 1.2) `}
-						clipPath={`url(#${maskId4})`}
-					/>
+						return (
+							<use
+								key={index}
+								href={`#${pathId}`}
+								transform={`
+									translate(${Math.cos(angle) * radius}, 
+											${Math.sin(angle) * radius})
+									rotate(${(angle * 180) / Math.PI + 45}, ${width / 2}, ${height / 2})
+									scale(${0.35 * elementProgress}, ${0.35 * elementProgress})
+								`}
+								opacity={elementProgress}
+								clipPath={`url(#${maskId1})`}
+							/>
+						);
+					})}
 				</clipPath>
 			</defs>
-			<path id={clipPathId} d={clipPath} />
+
 			<path id={pathId} d={path} />
 		</svg>
 	);

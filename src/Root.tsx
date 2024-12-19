@@ -2,6 +2,7 @@ import { Composition, staticFile } from 'remotion';
 import './style.css';
 import { schema } from '../types';
 import { BrushComposition } from './CompositionComponent';
+import { NewComposition } from './NewComposition';
 
 export const RemotionRoot: React.FC = () => {
 	return (
@@ -60,6 +61,20 @@ export const RemotionRoot: React.FC = () => {
 						}
 
 					]
+				}}
+			/>
+			<Composition
+				id="NewComposition"
+				component={NewComposition}
+				durationInFrames={300}
+				fps={30}
+				width={1280}
+				height={720}
+				defaultProps={{
+					titleText: "My Title",
+					titleColor: "#000000",
+					logoColor1: "#FF0000",
+					logoColor2: "#00FF00"
 				}}
 			/>
 		</>

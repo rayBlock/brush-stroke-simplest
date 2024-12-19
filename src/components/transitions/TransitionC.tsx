@@ -13,22 +13,11 @@ export const TransitionC = ({clipId}: {clipId: string}) => {
 	const {width, height, durationInFrames} = useVideoConfig();
 	const boundingBox = getBoundingBox(brushStroke1);
 	const frame = useCurrentFrame();
-	const progress = interpolate(frame, [0, durationInFrames / 2], [0, 1], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-		// easing: Easing.out(Easing.cubic),
-	});
 
-	const p1 = interpolate(1 - progress, [0.1, 1], [0, 1], {
+	const progress = interpolate(frame, [0, durationInFrames * 0.5], [0, 1], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',
-		easing: Easing.in(Easing.cubic),
-	});
-
-	const p2 = interpolate(progress, [0.1, 0.6], [-1, 0], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-		easing: Easing.in(Easing.cubic),
+		easing: Easing.bezier(0.4, 0, 0.2, 1),
 	});
 
 	const path = translatePath(
@@ -37,9 +26,35 @@ export const TransitionC = ({clipId}: {clipId: string}) => {
 		height / 2 - boundingBox.height / 2,
 	);
 	const maskId1 = useMemo(() => String(random(null)), []);
-	const maskId2 = useMemo(() => String(random(null)), []);
-	const maskId3 = useMemo(() => String(random(null)), []);
 	const pathId = useMemo(() => String(random(null)), []);
+
+	// Create a double-spiral effect with opposite rotations
+	const totalRotations = 2.5;
+	const pointsPerRotation = 22;
+	const totalPoints = totalRotations * pointsPerRotation;
+	
+	const spiralPoints = useMemo(() => {
+		return Array.from({length: totalPoints}, (_, i) => {
+			const angle = (i * 2 * Math.PI) / pointsPerRotation;
+			const rotation = i / totalPoints;
+			// Create a spiral with varying radius
+			const radius = interpolate(
+				rotation,
+				[0, 1],
+				[130, 35], // Slightly larger radius for more dramatic effect
+				{
+					extrapolateLeft: 'clamp',
+					extrapolateRight: 'clamp',
+					easing: Easing.bezier(0.4, 0, 0.2, 1),
+				}
+			);
+			return {
+				angle: angle + rotation * 2 * Math.PI * totalRotations,
+				radius,
+				index: i,
+			};
+		});
+	}, []);
 
 	return (
 		<svg
@@ -50,34 +65,58 @@ export const TransitionC = ({clipId}: {clipId: string}) => {
 		>
 			<defs>
 				<clipPath id={maskId1}>
-					<use href={`#${pathId}`} transform={`translate(${p1 * width}, 0) `} />
+					<use 
+						href={`#${pathId}`} 
+						transform={`translate(${(1 - progress) * width * 0.3}, 0)`}
+					/>
 				</clipPath>
 
-				<clipPath id={maskId2}>
-					<use href={`#${pathId}`} transform={`translate(${p2 * width}, 0)`} />
-				</clipPath>
-
-				<clipPath id={maskId3}>
-					<use href={`#${pathId}`} transform={`translate(${p2 * width}, 0)`} />
-				</clipPath>
-				{/* Clipping path from shapes */}
 				<clipPath id={clipId}>
-					<use
-						href={`#${pathId}`}
-						transform={`translate(0,-300) rotate(0, ${width / 2}, ${height / 2}) scale(1, 1.4) `}
-						clipPath={`url(#${maskId1})`}
-					/>
-					<use
-						href={`#${pathId}`}
-						transform={`translate(-300,0) rotate(${90}, ${width / 2}, ${height / 2}) scale(1, 1.3) `}
-						clipPath={`url(#${maskId2})`}
-					/>
+					{spiralPoints.map(({angle, radius, index}) => {
+						const progressThreshold = index / totalPoints;
+						const elementProgress = interpolate(
+							progress,
+							[progressThreshold - 0.08, progressThreshold],
+							[0, 1],
+							{
+								extrapolateLeft: 'clamp',
+								extrapolateRight: 'clamp',
+								easing: Easing.bezier(0.4, 0, 0.2, 1),
+							}
+						);
 
-					<use
-						href={`#${pathId}`}
-						transform={`rotate(0, ${width / 2}, ${height / 2}) scale(1, 1.4) `}
-						clipPath={`url(#${maskId3})`}
-					/>
+						if (elementProgress === 0) return null;
+
+						// Create two brush strokes for each point with different rotations
+						return (
+							<>
+								<use
+									key={`${index}-1`}
+									href={`#${pathId}`}
+									transform={`
+										translate(${Math.cos(angle) * radius}, 
+												${Math.sin(angle) * radius})
+										rotate(${(angle * 180) / Math.PI + 30}, ${width / 2}, ${height / 2})
+										scale(${0.3 * elementProgress}, ${0.3 * elementProgress})
+									`}
+									opacity={elementProgress}
+									clipPath={`url(#${maskId1})`}
+								/>
+								<use
+									key={`${index}-2`}
+									href={`#${pathId}`}
+									transform={`
+										translate(${Math.cos(-angle) * (radius * 0.7)}, 
+												${Math.sin(-angle) * (radius * 0.7)})
+										rotate(${(-angle * 180) / Math.PI - 30}, ${width / 2}, ${height / 2})
+										scale(${0.25 * elementProgress}, ${0.25 * elementProgress})
+									`}
+									opacity={elementProgress}
+									clipPath={`url(#${maskId1})`}
+								/>
+							</>
+						);
+					})}
 				</clipPath>
 			</defs>
 

@@ -13,7 +13,7 @@ export const BrushComposition: React.FC<z.infer<typeof schema>> = ({ images, bac
 
 	const { durationInFrames } = useVideoConfig();
 
-	const sceneDurationInFrames = Math.floor(durationInFrames / images.length);
+	const sceneDurationInFrames = Math.floor(durationInFrames / (images.length * 0.5));
 
 	return (
 		<AbsoluteFill style={{
